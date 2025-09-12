@@ -13,6 +13,9 @@
 
 MODULE_LICENSE("GPL");
 
+int max_msgs;
+int max_msg_len;
+
 static int majorNumber;
 static int number_opens = 0;
 static struct class *charClass = NULL;
@@ -139,5 +142,6 @@ static int dev_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
+module_param(max_msgs, int, 0);
 module_init(simple_init);
 module_exit(simple_exit);
