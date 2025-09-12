@@ -43,7 +43,7 @@ static int simple_init(void)
 		printk(KERN_ALERT "PubSub Driver failed to register a major number\n");
 		return majorNumber;
 	}
-	
+
 	printk(KERN_INFO "PubSub Driver: registered correctly with major number %d\n", majorNumber);
 
 	// Register the device class
@@ -53,22 +53,22 @@ static int simple_init(void)
 		printk(KERN_ALERT "PubSub Driver: failed to register device class\n");
 		return PTR_ERR(charClass);	// Correct way to return an error on a pointer
 	}
-	
+
 	printk(KERN_INFO "PubSub Driver: device class registered correctly\n");
 
 	// Register the device driver
 	charDevice = device_create(charClass, NULL, MKDEV(majorNumber, 0), NULL, DEVICE_NAME);
 	if (IS_ERR(charDevice)) {		// Clean up if there is an error
 		class_destroy(charClass);
-		unregister_chrdeZv(majorNumber, DEVICE_NAME);
+		unregister_chrdev(majorNumber, DEVICE_NAME);
 		printk(KERN_ALERT "PubSub Driver: failed to create the device\n");
 		return PTR_ERR(charDevice);
 	}
-	
+
 	printk(KERN_INFO "PubSub Driver: device class created.\n");
-	
+
 	INIT_LIST_HEAD(&list);
-		
+
 	return 0;
 }
 
@@ -94,24 +94,24 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 {
 	int error = 0;
 	struct message_s *entry = list_first_entry(&list, struct message_s, link);
-   
+
 	if (list_empty(&list)) {
 		printk(KERN_INFO "PubSub Driver: no data.\n");
-		
+
 		return 0;
-	}	
-	
+	}
+
 	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
 	error = copy_to_user(buffer, entry->message, entry->size);
 
 	if (!error) {				// if true then have success
 		printk(KERN_INFO "PubSub Driver: sent %d characters to the user\n", entry->size);
 		list_delete_head();
-		
+
 		return 0;
 	} else {
 		printk(KERN_INFO "PubSub Driver: failed to send %d characters to the user\n", error);
-		
+
 		return -EFAULT;			// Failed -- return a bad address message (i.e. -14)
 	}
 }
@@ -123,11 +123,11 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		list_show();
 
 		printk(KERN_INFO "PubSub Driver: received %zu characters from the user\n", len);
-		
+
 		return len;
 	} else {
 		printk(KERN_INFO "PubSub Driver: too many characters to deal with (%d)\n", len);
-		
+
 		return 0;
 	}
 }
