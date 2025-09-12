@@ -36,7 +36,7 @@ static struct file_operations fops =
 	.release = dev_release,
 };
 
-static int simple_init(void)
+static int pubsub_init(void)
 {
 	printk(KERN_INFO "PubSub Driver: Initializing the LKM\n");
 
@@ -75,7 +75,7 @@ static int simple_init(void)
 	return 0;
 }
 
-static void simple_exit(void)
+static void pubsub_exit(void)
 {
 	device_destroy(charClass, MKDEV(majorNumber, 0));
 	class_unregister(charClass);
@@ -143,5 +143,6 @@ static int dev_release(struct inode *inodep, struct file *filep)
 }
 
 module_param(max_msgs, int, 0);
-module_init(simple_init);
-module_exit(simple_exit);
+module_param(max_msg_len, int, 0);
+module_init(pubsub_init);
+module_exit(pubsub_exit);

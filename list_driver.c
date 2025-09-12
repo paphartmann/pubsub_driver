@@ -7,7 +7,7 @@ extern struct list_head list;
 int list_add_entry(const char *data)
 {
 	struct message_s *new_node = kmalloc((sizeof(struct message_s)), GFP_KERNEL);
-	new_node->message = kmalloc(msg_size, GFP_KERNEL);
+	new_node->message = kmalloc(max_msg_size, GFP_KERNEL);
 
 	if (!new_node || !new_node->message) {
 		printk(KERN_INFO "Memory allocation failed, this should never fail due to GFP_KERNEL flag\n");
