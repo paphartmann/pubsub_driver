@@ -1,8 +1,6 @@
-#define MSG_SIZE	128
-
 struct message_s {
 	struct list_head link;
-	char message[MSG_SIZE];
+	char *message;
 	short size;
 };
 
