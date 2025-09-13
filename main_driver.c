@@ -7,6 +7,7 @@
 #include <linux/list.h>
 #include <linux/slab.h>
 #include "list_driver.h"
+#include "params.h"
 
 #define DEVICE_NAME "pubsub_driver"
 #define CLASS_NAME  "pubsub_class"
@@ -14,7 +15,7 @@
 MODULE_LICENSE("GPL");
 
 int max_msgs;
-int max_msg_len;
+int max_msg_size;
 
 static int majorNumber;
 static int number_opens = 0;
@@ -121,7 +122,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	if (len < MSG_SIZE) {
+	if (len < max_msg_size) {
 		list_add_entry(buffer);
 		list_show();
 
@@ -143,6 +144,6 @@ static int dev_release(struct inode *inodep, struct file *filep)
 }
 
 module_param(max_msgs, int, 0);
-module_param(max_msg_len, int, 0);
+module_param(max_msg_size, int, 0);
 module_init(pubsub_init);
 module_exit(pubsub_exit);

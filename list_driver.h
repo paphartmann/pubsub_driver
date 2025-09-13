@@ -1,3 +1,5 @@
+#include "params.h"
+
 struct message_s {
 	struct list_head link;
 	char *message;
