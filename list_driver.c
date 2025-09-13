@@ -15,7 +15,6 @@ int list_add_entry(const char *data)
 		return 1;
 	}
 	strcpy(new_node->message, data);
-	new_node->size = strlen(data);
 	list_add_tail(&(new_node->link), &list);
 
 	return 0;

@@ -106,10 +106,10 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	}
 
 	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
-	error = copy_to_user(buffer, entry->message, entry->size);
+	error = copy_to_user(buffer, entry->message, max_msg_size);
 
 	if (!error) {				// if true then have success
-		printk(KERN_INFO "PubSub Driver: sent %d characters to the user\n", entry->size);
+		printk(KERN_INFO "PubSub Driver: sent %d characters to the user\n", strlen(entry->message));
 		list_delete_head();
 
 		return 0;
