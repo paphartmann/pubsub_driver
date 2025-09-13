@@ -15,7 +15,7 @@ int main()
 
 	printf("Starting device test code example...\n");
 
-	fd = open("/dev/pubsub_driver", O_RDWR);
+	fd = open("/dev/pubsub", O_RDWR);
 	if (fd < 0) {
 		perror("Failed to open the device...");
 		return errno;

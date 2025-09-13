@@ -9,7 +9,7 @@
 #include "list_driver.h"
 #include "params.h"
 
-#define DEVICE_NAME "pubsub_driver"
+#define DEVICE_NAME "pubsub"
 #define CLASS_NAME  "pubsub_class"
 
 MODULE_LICENSE("GPL");
@@ -18,7 +18,7 @@ int max_msgs;
 int max_msg_size;
 
 static int majorNumber;
-static int number_opens = 0;
+//static int number_opens = 0;
 static struct class *charClass = NULL;
 static struct device *charDevice = NULL;
 
@@ -39,7 +39,7 @@ static struct file_operations fops =
 
 static int pubsub_init(void)
 {
-	printk(KERN_INFO "PubSub Driver: Initializing the LKM\n");
+	printk(KERN_INFO "PubSub Driver: Initializing the LKM with parameters max_msgs=%d, max_msg_size=%d\n", max_msgs, max_msg_size);
 
 	// Try to dynamically allocate a major number for the device -- more difficult but worth it
 	majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
@@ -87,8 +87,8 @@ static void pubsub_exit(void)
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
-	number_opens++;
-	printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
+	//number_opens++;
+	//printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
 	printk("Process id: %d, name: %s\n", (int) task_pid_nr(current), current->comm);
 
 	return 0;
