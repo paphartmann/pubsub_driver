@@ -4,6 +4,7 @@
 
 extern struct list_head list;
 
+/*
 int list_add_entry(const char *data)
 {
 	struct message_s *new_node = kmalloc((sizeof(struct message_s)), GFP_KERNEL);
@@ -65,4 +66,4 @@ int list_delete_entry(char *data)
 	printk(KERN_INFO "Could not find data.");
 
 	return 1;
-}
+}*/

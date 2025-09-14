@@ -13,7 +13,6 @@ struct process_es {
 	int head = 0, tail = 0;
 };
 
-int list_add_entry(const char *data);
-void list_show(void);
-int list_delete_head(void);
-int list_delete_entry(char *data);
+void add_process_to_topic(int pid, char topic_title[64]);
+void rem_process_from_topic(int pid, char topic_title[64]);
+void publish_to_topic(char *message, char topic_title[64]);
