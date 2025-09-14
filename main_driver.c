@@ -22,7 +22,7 @@ static int majorNumber;
 static struct class *charClass = NULL;
 static struct device *charDevice = NULL;
 
-struct list_head list;
+struct list_head topic_list;
 
 static int	dev_open(struct inode *, struct file *);
 static int	dev_release(struct inode *, struct file *);
