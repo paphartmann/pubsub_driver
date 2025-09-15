@@ -133,17 +133,29 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	char cpy_buffer[len];
 	copy_from_user(cpy_buffer, buffer, len);
 	
-	char action[len-1];
+	char action[len];
 	sscanf(cpy_buffer, "/%s", action);
 
+	char topic_name[len];
+	int pid = (int) task_pid_nr(current);
 	if (strcmp(action, "subscribe") == 0) {
-		
+		sscanf(cpy_buffer, "/subscribe %s", topic_name);
+		printk(KERN_INFO "Process %d wants to subscribe to topic %s\n", pid, topic_name);
+		add_process_to_topic(pid, topic_name);
 	} else if (strcmp(action, "unsubscribe") == 0) {
-		
+		printk(KERN_INFO "Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
+		sscanf(cpy_buffer, "/unsubscribe %s", topic_name);
+		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
-
+		char message[len];
+		sscanf(cpy_buffer, "/publish %s \"%s\"", topic_name, message);
+		printk(KERN_INFO "Process %d wants to publish %s to %s\n", pid, message, topic_name);
+		publish_to_topic(message, topic_name);
 	} else if (strcmp(action, "fetch") == 0) {
 
+	} else {
+		printk(KERN_NOTICE "Device was written with wrong format\nMessage written: %s\n", cpy_buffer);
+		return -1;
 	}
 }
 
