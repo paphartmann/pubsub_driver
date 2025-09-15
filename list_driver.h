@@ -10,7 +10,7 @@ struct process_es {
 struct topic_s {
 	struct list_head link;
 	char title[64];
-	struct process_es processes;
+	struct list_head processes;
 };
 
 void add_process_to_topic(int pid, char topic_title[64]);

@@ -63,18 +63,67 @@ void add_process_to_topic(int pid, char topic_title[64])
 	struct topic_s *entry = NULL;
 
 	list_for_each_entry(entry, &topic_list, link) {
-		if (strcmp(entry->title, topic_title)) {
+		if (strcmp(entry->title, topic_title) == 0) {
 			struct process_es *new_process = kmalloc(sizeof(struct process_es), GFP_KERNEL);
 			new_process->pid = pid;
 			new_process->messages = kmalloc(max_msg_size * max_msgs, GFP_KERNEL);
-			list_add_tail(&new_process->link, &topic_list);
+			new_process->head = 0;
+			new_process->tail = 0;
+			INIT_LIST_HEAD(&new_process->link);
+			list_add_tail(&new_process->link, &entry->processes);
 			return;
 		}
 	}
 
 	entry = kmalloc(sizeof(struct topic_s), GFP_KERNEL);
-	entry->head = 0;
-	entry->tail = 0;
 	strcpy(entry->title, topic_title);
 	INIT_LIST_HEAD(&entry->link);
+	INIT_LIST_HEAD(&entry->processes);
+	list_add_tail(&entry->link, &topic_list);
+
+	struct process_es *new_process = kmalloc(sizeof(struct process_es), GFP_KERNEL);
+	new_process->messages = kmalloc(max_msgs * max_msg_size, GFP_KERNEL);
+	new_process->head = 0;
+	new_process->tail = 0;
+	new_process->pid = pid;
+	INIT_LIST_HEAD(&new_process->link);
+	list_add_tail(&new_process->link, &entry->processes);
+}
+
+void rem_process_from_topic(int pid, char topic_title[64])
+{
+    struct topic_s *topic;
+    struct process_es *proc, *tmp;
+
+    list_for_each_entry(topic, &topic_list, link) {
+        if (strcmp(topic->title, topic_title) == 0) {
+
+            list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
+                if (proc->pid == pid) {
+                    list_del(&proc->link);
+                    kfree(proc->messages);
+                    kfree(proc);
+                    return;
+                }
+            }
+
+            return;
+        }
+    }
+}
+
+void publish_to_topic(char *message, char topic_title[64])
+{
+	struct topic_s *entry = NULL;
+
+	list_for_each_entry(entry, &topic_list, link) {
+		if (strcmp(topic_title, entry->title) == 0) {
+			struct process_es *process = NULL;
+			list_for_each_entry(process, &entry->processes, link) {
+				size_t offset = (process->tail++ % max_msgs) * max_msg_size;
+				memcpy(process->messages + offset, message, max_msg_size);
+			}
+			return;
+		}
+	}
 }
