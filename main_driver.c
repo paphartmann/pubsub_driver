@@ -78,6 +78,14 @@ static int pubsub_init(void)
 
 static void pubsub_exit(void)
 {
+	struct topic_s *topic;
+	list_for_each_entry(topic, topic_list, link) {
+		struct process_es *process;
+		list_for_each_entry(process, topic->processes, link) {
+			kfree(process->messages);
+		}
+	}
+
 	device_destroy(charClass, MKDEV(majorNumber, 0));
 	class_unregister(charClass);
 	class_destroy(charClass);
@@ -89,7 +97,7 @@ static int dev_open(struct inode *inodep, struct file *filep)
 {
 	//number_opens++;
 	//printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
-	printk("Process id: %d, name: %s\n", (int) task_pid_nr(current), current->comm);
+	printk("Process id %d opened the device\n", (int) task_pid_nr(current));
 
 	return 0;
 }
@@ -122,23 +130,26 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	if (len < max_msg_size) {
-		list_add_entry(buffer);
-		list_show();
+	char cpy_buffer[len];
+	copy_from_user(cpy_buffer, buffer, len);
+	
+	char action[len-1];
+	sscanf(cpy_buffer, "/%s", action);
 
-		printk(KERN_INFO "PubSub Driver: received %zu characters from the user\n", len);
+	if (strcmp(action, "subscribe") == 0) {
+		
+	} else if (strcmp(action, "unsubscribe") == 0) {
+		
+	} else if (strcmp(action, "publish") == 0) {
 
-		return len;
-	} else {
-		printk(KERN_INFO "PubSub Driver: too many characters to deal with (%d)\n", len);
+	} else if (strcmp(action, "fetch") == 0) {
 
-		return 0;
 	}
 }
 
 static int dev_release(struct inode *inodep, struct file *filep)
 {
-	printk(KERN_INFO "PubSub Driver: device successfully closed\n");
+	printk(KERN_INFO "Process id %d closed the device\n", (int) task_pid_nr(current));
 
 	return 0;
 }
