@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	}
 
 	for (int _ = 0; _ < 10; _++) {
-		const char *publish_str = "Hello from %d\n";
+		const char *publish_str = "/publish \"Hello from %d\"\n";
 		len = sprintf(stringToSend, publish_str, getpid());
 		printf("Process %d publishing \"%s\" in %s\n", getpid(), stringToSend, argv[1]);
 		write(fd, stringToSend, len);
