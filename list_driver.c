@@ -49,6 +49,7 @@ void rem_process_from_topic(int pid, char topic_title[64])
                     list_del(&proc->link);
                     kfree(proc->messages);
                     kfree(proc);
+		    kfree(proc->topic_to_be_fetched);
                     return;
                 }
             }

@@ -126,27 +126,30 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	char topic_name[len];
 	int pid = (int) task_pid_nr(current);
 	if (strcmp(action, "subscribe") == 0) {
+		//printk("KERNEL: topic_name = %s\n", topic_name);
 		sscanf(cpy_buffer, "/subscribe %s", topic_name);
-		printk(KERN_INFO "Process %d wants to subscribe to topic %s\n", pid, topic_name);
+		//printk("KERNEL: topic_name = %s\n", topic_name);
+		printk(KERN_INFO "KERNEL: Process %d wants to subscribe to topic %s\n", pid, topic_name);
 		add_process_to_topic(pid, topic_name);
 	} else if (strcmp(action, "unsubscribe") == 0) {
 		sscanf(cpy_buffer, "/unsubscribe %s", topic_name);
-		printk(KERN_INFO "Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
+		printk(KERN_INFO "KENREL: Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
 		char message[len];
 		sscanf(cpy_buffer, "/publish %s \"%s\"", topic_name, message);
-		printk(KERN_INFO "Process %d wants to publish %s to %s\n", pid, message, topic_name);
+		printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n", pid, message, topic_name);
 		publish_to_topic(message, topic_name);
 	} else if (strcmp(action, "fetch") == 0) {
 		sscanf(cpy_buffer, "/fetch %s", topic_name);
-		printk(KERN_INFO "Process %d wants to fetch from %s\n", pid, topic_name);
-		
+		printk(KERN_INFO "KERNEL: Process %d wants to fetch from %s\n", pid, topic_name);
+
 		struct topic_s *topic;
 		list_for_each_entry(topic, &topic_list, link) {
 			struct process_es *process;
 			list_for_each_entry(process, &topic->processes, link) {
 				if (process->pid == pid) {
+					process->topic_to_be_fetched = kmalloc(len, GFP_KERNEL);
 					memcpy(process->topic_to_be_fetched, topic_name, len);
 				}
 			}

@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 	char receive[BUFFER_LENGTH];
 	char stringToSend[BUFFER_LENGTH];
 
-	printf("Starting device test code example...\n");
+	printf("USER: Starting device test code example...\n");
 
 	fd = open("/dev/pubsub", O_RDWR);
 	if (fd < 0) {
@@ -23,16 +23,18 @@ int main(int argc, char **argv)
 		return errno;
 	}
 
+	len = sprintf(stringToSend, "/subscribe %s\n", argv[1]);
+	write(fd, stringToSend, len);
 	for (int _ = 0; _ < 10; _++) {
-		const char *publish_str = "/publish \"Hello from %d\"\n";
-		len = sprintf(stringToSend, publish_str, getpid());
-		printf("Process %d publishing \"%s\" in %s\n", getpid(), stringToSend, argv[1]);
+		const char *publish_str = "/publish %s \"Hello from %d\"\n";
+		len = sprintf(stringToSend, publish_str, argv[1], getpid());
+		printf("USER: Process %d publishing \"%s\"\n", getpid(), stringToSend);
 		write(fd, stringToSend, len);
 		
 		len = sprintf(stringToSend, "/fetch %s\n", argv[1]);
 		write(fd, stringToSend, len);
 		read(fd, receive, BUFFER_LENGTH);
-		printf("Process %d received %s from topic %s\n", getpid(), receive, argv[1]);
+		printf("USER: Process %d received \"%s\" from topic %s\n", getpid(), receive, argv[1]);
 
 		sleep(3);
 	}
