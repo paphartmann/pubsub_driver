@@ -22,39 +22,7 @@ int main()
 	}
 
 	while (1) {
-		printf("Type in a short string to send to the kernel module (or just ENTER to finish):\n");
-
-		memset(stringToSend, 0, BUFFER_LENGTH);
-		fgets(stringToSend, BUFFER_LENGTH - 1, stdin);
-		len = strnlen(stringToSend, BUFFER_LENGTH);
-		stringToSend[len - 1] = '\0';
-
-		if (len == 1) break;
-
-		ret = write(fd, stringToSend, strlen(stringToSend));
-		if (ret < 0) {
-			perror("Failed to write the message to the device.");
-			return errno;
-		}
 	}
-
-	printf("Press ENTER to read back from the device...\n");
-	getchar();
-
-	while (1) {
-		memset(receive, 0, BUFFER_LENGTH);
-		ret = read(fd, receive, BUFFER_LENGTH);
-		if (ret < 0) {
-			perror("Failed to read the message from the device.");
-			return errno;
-		}
-
-		len = strnlen(receive, BUFFER_LENGTH);
-		if (len == 0) break;
-		printf("Read message: [%s]\n", receive);
-	}
-
-	printf("End of the program\n");
 
 	return 0;
 }

@@ -73,3 +73,18 @@ void publish_to_topic(char *message, char topic_title[64])
 		}
 	}
 }
+
+char *fetch_from_process(int pid)
+{
+	struct topic_s *topic;
+	list_for_each_entry(topic, &topic_list, link) {
+		struct process_es *process;
+		list_for_each_entry(process, &topic->processes, link) {
+			if (process->pid == pid && strcmp(process->topic_to_be_fetched, topic->title) == 0) {
+				size_t offset = (process->head++ % max_msgs) * max_msg_size;
+				return process->messages + offset;
+			}
+		}
+	}
+	return NULL;
+}

@@ -71,7 +71,7 @@ static int pubsub_init(void)
 
 	printk(KERN_INFO "PubSub Driver: device class created.\n");
 
-	INIT_LIST_HEAD(&list);
+	INIT_LIST_HEAD(&topic_list);
 
 	return 0;
 }
@@ -79,9 +79,9 @@ static int pubsub_init(void)
 static void pubsub_exit(void)
 {
 	struct topic_s *topic;
-	list_for_each_entry(topic, topic_list, link) {
+	list_for_each_entry(topic, &topic_list, link) {
 		struct process_es *process;
-		list_for_each_entry(process, topic->processes, link) {
+		list_for_each_entry(process, &topic->processes, link) {
 			kfree(process->messages);
 		}
 	}
@@ -98,39 +98,26 @@ static int dev_open(struct inode *inodep, struct file *filep)
 	//number_opens++;
 	//printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
 	printk("Process id %d opened the device\n", (int) task_pid_nr(current));
-
 	return 0;
 }
 
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
-	int error = 0;
-	struct message_s *entry = list_first_entry(&list, struct message_s, link);
+	int pid = (int) task_pid_nr(current);
+	char *result = fetch_from_process(pid);
 
-	if (list_empty(&list)) {
-		printk(KERN_INFO "PubSub Driver: no data.\n");
-
-		return 0;
-	}
-
-	// copy_to_user has the format ( * to, *from, size) and returns 0 on success
-	error = copy_to_user(buffer, entry->message, max_msg_size);
-
-	if (!error) {				// if true then have success
-		printk(KERN_INFO "PubSub Driver: sent %d characters to the user\n", strlen(entry->message));
-		list_delete_head();
-
-		return 0;
+	if (result != NULL) {
+		copy_to_user(buffer, result, len);
+		return len;
 	} else {
-		printk(KERN_INFO "PubSub Driver: failed to send %d characters to the user\n", error);
-
-		return -EFAULT;			// Failed -- return a bad address message (i.e. -14)
+		return -1;
 	}
 }
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
 	char cpy_buffer[len];
+	memset(cpy_buffer, 0, len);
 	copy_from_user(cpy_buffer, buffer, len);
 	
 	char action[len];
@@ -143,8 +130,8 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		printk(KERN_INFO "Process %d wants to subscribe to topic %s\n", pid, topic_name);
 		add_process_to_topic(pid, topic_name);
 	} else if (strcmp(action, "unsubscribe") == 0) {
-		printk(KERN_INFO "Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		sscanf(cpy_buffer, "/unsubscribe %s", topic_name);
+		printk(KERN_INFO "Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
 		char message[len];
@@ -152,17 +139,28 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		printk(KERN_INFO "Process %d wants to publish %s to %s\n", pid, message, topic_name);
 		publish_to_topic(message, topic_name);
 	} else if (strcmp(action, "fetch") == 0) {
-
+		sscanf(cpy_buffer, "/fetch %s", topic_name);
+		printk(KERN_INFO "Process %d wants to fetch from %s\n", pid, topic_name);
+		
+		struct topic_s *topic;
+		list_for_each_entry(topic, &topic_list, link) {
+			struct process_es *process;
+			list_for_each_entry(process, &topic->processes, link) {
+				if (process->pid == pid) {
+					memcpy(process->topic_to_be_fetched, topic_name, len);
+				}
+			}
+		}
 	} else {
 		printk(KERN_NOTICE "Device was written with wrong format\nMessage written: %s\n", cpy_buffer);
 		return -1;
 	}
+	return len;
 }
 
 static int dev_release(struct inode *inodep, struct file *filep)
 {
 	printk(KERN_INFO "Process id %d closed the device\n", (int) task_pid_nr(current));
-
 	return 0;
 }
 
