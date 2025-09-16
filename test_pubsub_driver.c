@@ -1,15 +1,17 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <string.h>
 #include <unistd.h>
 
 #define BUFFER_LENGTH 256
 
-int main()
+int main(int argc, char **argv)
 {
-	int ret, fd, len;
+	if (argc != 2) {
+		puts("program has to be run with ./test_pubsub_driver topic_name");
+		return -1;
+	}
+	int fd, len;
 	char receive[BUFFER_LENGTH];
 	char stringToSend[BUFFER_LENGTH];
 
@@ -21,7 +23,18 @@ int main()
 		return errno;
 	}
 
-	while (1) {
+	for (int _ = 0; _ < 10; _++) {
+		const char *publish_str = "Hello from %d\n";
+		len = sprintf(stringToSend, publish_str, getpid());
+		printf("Process %d publishing \"%s\" in %s\n", getpid(), stringToSend, argv[1]);
+		write(fd, stringToSend, len);
+		
+		len = sprintf(stringToSend, "/fetch %s\n", argv[1]);
+		write(fd, stringToSend, len);
+		read(fd, receive, BUFFER_LENGTH);
+		printf("Process %d received %s from topic %s\n", getpid(), receive, argv[1]);
+
+		sleep(3);
 	}
 
 	return 0;

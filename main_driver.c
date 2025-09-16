@@ -97,7 +97,7 @@ static int dev_open(struct inode *inodep, struct file *filep)
 {
 	//number_opens++;
 	//printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
-	printk("Process id %d opened the device\n", (int) task_pid_nr(current));
+	printk("Process %d opened the device\n", (int) task_pid_nr(current));
 	return 0;
 }
 
@@ -160,7 +160,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 
 static int dev_release(struct inode *inodep, struct file *filep)
 {
-	printk(KERN_INFO "Process id %d closed the device\n", (int) task_pid_nr(current));
+	printk(KERN_INFO "Process %d closed the device\n", (int) task_pid_nr(current));
 	return 0;
 }
 
