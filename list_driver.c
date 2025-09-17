@@ -45,6 +45,9 @@ void rem_process_from_topic(int pid, char topic_title[64])
         if (strcmp(topic->title, topic_title) == 0) {
 
             list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
+		if (proc->head < proc->tail) {
+			printk(KERN_ALERT "Process %d unsubscribed from %s with messages to be read\n", pid, topic_title);
+		}
                 if (proc->pid == pid) {
                     list_del(&proc->link);
                     kfree(proc->messages);
@@ -63,6 +66,9 @@ void publish_to_topic(char *message, char topic_title[64])
 {
 	struct topic_s *entry = NULL;
 
+	if (strlen(message) > max_msg_size) {
+		printk(KERN_ALERT "Message is larger than maximum message size\n");
+	}
 	list_for_each_entry(entry, &topic_list, link) {
 		if (strcmp(topic_title, entry->title) == 0) {
 			struct process_es *process = NULL;
