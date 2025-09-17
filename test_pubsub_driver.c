@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <time.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define BUFFER_LENGTH 256
 
@@ -23,6 +25,7 @@ int main(int argc, char **argv)
 		return errno;
 	}
 
+	srandom(time(NULL));
 	len = sprintf(stringToSend, "/subscribe %s\n", argv[1]);
 	write(fd, stringToSend, len);
 	for (int _ = 0; _ < 10; _++) {
@@ -30,13 +33,15 @@ int main(int argc, char **argv)
 		len = sprintf(stringToSend, publish_str, argv[1], getpid());
 		printf("USER: Process %d publishing \"%s\"\n", getpid(), stringToSend);
 		write(fd, stringToSend, len);
-		
+
+		sleep(1 + random() % 2);
+
 		len = sprintf(stringToSend, "/fetch %s\n", argv[1]);
 		write(fd, stringToSend, len);
 		read(fd, receive, BUFFER_LENGTH);
 		printf("USER: Process %d received \"%s\" from topic %s\n", getpid(), receive, argv[1]);
 
-		sleep(3);
+		sleep(3 + sleep(random() % 4));
 	}
 
 	return 0;

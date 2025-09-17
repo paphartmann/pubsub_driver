@@ -136,8 +136,9 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		printk(KERN_INFO "KENREL: Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
-		char message[len];
-		sscanf(cpy_buffer, "/publish %s \"%s\"", topic_name, message);
+		char *message;
+		sscanf(cpy_buffer, "/publish %s", topic_name);
+		message = strchr(cpy_buffer, '"');
 		printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n", pid, message, topic_name);
 		publish_to_topic(message, topic_name);
 	} else if (strcmp(action, "fetch") == 0) {
