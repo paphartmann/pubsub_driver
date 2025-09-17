@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		return errno;
 	}
 
-	srandom(time(NULL));
+	srandom(getpid());
 	len = sprintf(stringToSend, "/subscribe %s\n", argv[1]);
 	write(fd, stringToSend, len);
 	for (int _ = 0; _ < 10; _++) {
@@ -34,15 +34,17 @@ int main(int argc, char **argv)
 		printf("USER: Process %d publishing \"%s\"\n", getpid(), stringToSend);
 		write(fd, stringToSend, len);
 
-		sleep(1 + random() % 2);
+		sleep(2 + random() % 3);
 
 		len = sprintf(stringToSend, "/fetch %s\n", argv[1]);
 		write(fd, stringToSend, len);
 		read(fd, receive, BUFFER_LENGTH);
 		printf("USER: Process %d received \"%s\" from topic %s\n", getpid(), receive, argv[1]);
 
-		sleep(3 + sleep(random() % 4));
+		sleep(2 + sleep(random() % 3));
 	}
+
+	sprintf(stringToSend, "/unsubscribe %s\n", argv[1]);
 
 	return 0;
 }

@@ -14,8 +14,8 @@
 
 MODULE_LICENSE("GPL");
 
-int max_msgs;
-int max_msg_size;
+int max_msgs = 5;
+int max_msg_size = 255;
 
 static int majorNumber;
 //static int number_opens = 0;
@@ -168,7 +168,7 @@ static int dev_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-module_param(max_msgs, int, 0);
-module_param(max_msg_size, int, 0);
+module_param(max_msgs, int, 0644);
+module_param(max_msg_size, int, 0644);
 module_init(pubsub_init);
 module_exit(pubsub_exit);
