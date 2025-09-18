@@ -18,41 +18,41 @@ void add_process_to_topic(int pid, char topic_title[64])
 			INIT_LIST_HEAD(&new_process->link);
 			list_add_tail(&new_process->link, &entry->processes);
 			return;
+			}
 		}
+
+		entry = kmalloc(sizeof(struct topic_s), GFP_KERNEL);
+		strcpy(entry->title, topic_title);
+		INIT_LIST_HEAD(&entry->link);
+		INIT_LIST_HEAD(&entry->processes);
+		list_add_tail(&entry->link, &topic_list);
+
+		struct process_es *new_process = kmalloc(sizeof(struct process_es), GFP_KERNEL);
+		new_process->messages = kmalloc(max_msgs * max_msg_size, GFP_KERNEL);
+		new_process->head = 0;
+		new_process->tail = 0;
+		new_process->pid = pid;
+		INIT_LIST_HEAD(&new_process->link);
+		list_add_tail(&new_process->link, &entry->processes);
 	}
 
-	entry = kmalloc(sizeof(struct topic_s), GFP_KERNEL);
-	strcpy(entry->title, topic_title);
-	INIT_LIST_HEAD(&entry->link);
-	INIT_LIST_HEAD(&entry->processes);
-	list_add_tail(&entry->link, &topic_list);
+	void rem_process_from_topic(int pid, char topic_title[64])
+	{
+	    struct topic_s *topic;
+	    struct process_es *proc, *tmp;
 
-	struct process_es *new_process = kmalloc(sizeof(struct process_es), GFP_KERNEL);
-	new_process->messages = kmalloc(max_msgs * max_msg_size, GFP_KERNEL);
-	new_process->head = 0;
-	new_process->tail = 0;
-	new_process->pid = pid;
-	INIT_LIST_HEAD(&new_process->link);
-	list_add_tail(&new_process->link, &entry->processes);
-}
+	    list_for_each_entry(topic, &topic_list, link) {
+		if (strcmp(topic->title, topic_title) == 0) {
 
-void rem_process_from_topic(int pid, char topic_title[64])
-{
-    struct topic_s *topic;
-    struct process_es *proc, *tmp;
-
-    list_for_each_entry(topic, &topic_list, link) {
-        if (strcmp(topic->title, topic_title) == 0) {
-
-            list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
-		if (proc->head < proc->tail) {
-			printk(KERN_ALERT "Process %d unsubscribed from %s with messages to be read\n", pid, topic_title);
-		}
-                if (proc->pid == pid) {
-                    list_del(&proc->link);
-                    kfree(proc->messages);
-                    kfree(proc);
-		    kfree(proc->topic_to_be_fetched);
+		    list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
+			if (proc->head < proc->tail) {
+				printk(KERN_ALERT "Process %d unsubscribed from %s with messages to be read\n", pid, topic_title);
+			}
+			if (proc->pid == pid) {
+			    list_del(&proc->link);
+			    kfree(proc->messages);
+			    kfree(proc->topic_to_be_fetched);
+			    kfree(proc);
                     return;
                 }
             }

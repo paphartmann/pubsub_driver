@@ -164,6 +164,11 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 
 static int dev_release(struct inode *inodep, struct file *filep)
 {
+	int pid = (int)task_pid_nr(current);
+	struct topic_s *topic;
+	list_for_each_entry(topic, &topic_list, link) {
+		rem_process_from_topic(pid, topic->title);
+        }
 	printk(KERN_INFO "Process %d closed the device\n", (int) task_pid_nr(current));
 	return 0;
 }
