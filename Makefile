@@ -8,7 +8,9 @@ all:
 	$(MAKE) -C $(KDIR) M=$$PWD
 	$(MAKE) -C $(KDIR) M=$$PWD modules_install INSTALL_MOD_PATH=../../target
 	$(COMPILER) -o test_pubsub_driver test_pubsub_driver.c
+	$(COMPILER) -o test_pubsub_driver_it test_pubsub_driver_it.c
 	cp test_pubsub_driver $(BUILDROOT_DIR)/output/target/bin
+	cp test_pubsub_driver_it $(BUILDROOT_DIR)/output/target/bin
 
 clean:
 	rm -f *.o *.ko .*.cmd
@@ -16,4 +18,5 @@ clean:
 	rm -f Module.symvers
 	rm -f pubsub_driver.mod.c
 	rm -f test_pubsub_driver
+	rm -f test_pubsub_driver_it
 
