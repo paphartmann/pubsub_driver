@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 			len = sprintf(stringToSend, "/fetch %s\n", argv[i]);
 			write(fd, stringToSend, len);
 			read(fd, receive, BUFFER_LENGTH);
-			// printf("USER: Process %d received \"%s\" from topic %s\n", getpid(), receive, argv[i]);
+			printf("USER: Process %d received \"%s\" from topic %s\n", getpid(), receive, argv[i]);
 		}
 
 		sleep(2 + sleep(random() % 3));
