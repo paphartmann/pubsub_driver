@@ -82,12 +82,20 @@ static void pubsub_exit(void)
     	struct process_es *process, *tmp_process;
     	list_for_each_entry_safe(topic, tmp_topic, &topic_list, link) {
         	list_for_each_entry_safe(process, tmp_process, &topic->processes, link) {
-           		kfree(process->messages);
-			kfree(process->topic_to_be_fetched);
+			printk(KERN_INFO "freeing messages");
+			if (process->messages != NULL) {
+           			kfree(process->messages);
+			}
+			printk(KERN_INFO "freeing topic_to_be_fetched");
+			if (process->topic_to_be_fetched != NULL) {
+				kfree(process->topic_to_be_fetched);
+			}
             		list_del(&process->link);
-            		kfree(process);
+            		printk(KERN_INFO "freeing process");
+			kfree(process);
         	}
         	list_del(&topic->link);
+		printk(KERN_INFO "freeing topic");
         	kfree(topic);
     	}
 

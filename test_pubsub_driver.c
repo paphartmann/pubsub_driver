@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 		len = sprintf(stringToSend, "/subscribe %s\n", argv[i]);
 		write(fd, stringToSend, len);
 	}
-	for (int _ = 0; _ < 10; _++) {
+	for (int _ = 0; _ < 5; _++) {
 		const char *publish_str = "/publish %s \"Hello from %d\"\n";
 		for (int i = 1; i < argc; i++) {
 			len = sprintf(stringToSend, publish_str, argv[i], getpid());
