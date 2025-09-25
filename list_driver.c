@@ -63,8 +63,6 @@ void rem_process_from_topic(int pid, char topic_title[64])
                 return;
             }
         }
-
-        return;
     }
 }
 

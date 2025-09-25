@@ -78,24 +78,25 @@ static int pubsub_init(void)
 
 static void pubsub_exit(void)
 {
+	printk(KERN_INFO "removing the driver\n"); 
 	struct topic_s *topic, *tmp_topic;
     	struct process_es *process, *tmp_process;
     	list_for_each_entry_safe(topic, tmp_topic, &topic_list, link) {
         	list_for_each_entry_safe(process, tmp_process, &topic->processes, link) {
-			printk(KERN_INFO "freeing messages");
+			printk(KERN_INFO "freeing messages\n");
 			if (process->messages != NULL) {
            			kfree(process->messages);
 			}
-			printk(KERN_INFO "freeing topic_to_be_fetched");
+			printk(KERN_INFO "freeing topic_to_be_fetched\n");
 			if (process->topic_to_be_fetched != NULL) {
 				kfree(process->topic_to_be_fetched);
 			}
             		list_del(&process->link);
-            		printk(KERN_INFO "freeing process");
+            		printk(KERN_INFO "freeing process\n");
 			kfree(process);
         	}
         	list_del(&topic->link);
-		printk(KERN_INFO "freeing topic");
+		printk(KERN_INFO "freeing topic\n");
         	kfree(topic);
     	}
 
