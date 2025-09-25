@@ -36,29 +36,33 @@ void add_process_to_topic(int pid, char topic_title[64])
 		list_add_tail(&new_process->link, &entry->processes);
 	}
 
-	void rem_process_from_topic(int pid, char topic_title[64])
-	{
-	    struct topic_s *topic;
-	    struct process_es *proc, *tmp;
+void rem_process_from_topic(int pid, char topic_title[64])
+{
+    struct topic_s *topic;
+    struct process_es *proc, *tmp;
 
-	    list_for_each_entry(topic, &topic_list, link) {
-		if (strcmp(topic->title, topic_title) == 0) {
+    list_for_each_entry(topic, &topic_list, link) {
+        if (strcmp(topic->title, topic_title) != 0)
+            continue;
 
-		    list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
-			if (proc->head < proc->tail) {
-				printk(KERN_ALERT "Process %d unsubscribed from %s with messages to be read\n", pid, topic_title);
-			}
-			if (proc->pid == pid) {
-			    list_del(&proc->link);
-			    kfree(proc->messages);
-			    kfree(proc->topic_to_be_fetched);
-			    kfree(proc);
-                    return;
+        list_for_each_entry_safe(proc, tmp, &topic->processes, link) {
+            if (proc->pid == pid) {
+                if (proc->head < proc->tail) {
+                    printk(KERN_ALERT
+                           "Process %d unsubscribed from %s with messages to be read\n",
+                           pid, topic_title);
                 }
-            }
 
-            return;
+                list_del(&proc->link);
+                kfree(proc->messages);
+		kfree(proc->topic_to_be_fetched);
+
+                kfree(proc);
+                return;
+            }
         }
+
+        return;
     }
 }
 
