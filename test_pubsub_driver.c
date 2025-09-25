@@ -49,5 +49,7 @@ int main(int argc, char **argv)
 		write(fd, stringToSend, len);
 	}
 
+	close(fd);
+
 	return 0;
 }
