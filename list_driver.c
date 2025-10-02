@@ -1,4 +1,5 @@
 #include <linux/list.h>
+#include <linux/delay.h>
 #include <linux/slab.h>
 #include "list_driver.h"
 
@@ -53,6 +54,8 @@ void rem_process_from_topic(int pid, char topic_title[64])
                            pid, topic_title);
                 }
 
+		printk(KERN_INFO "deleting %d from %s\n", proc->pid, topic->title);
+		mdelay(1);
                 list_del(&proc->link);
                 kfree(proc->messages);
 		kfree(proc->topic_to_be_fetched);

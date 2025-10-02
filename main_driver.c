@@ -78,19 +78,6 @@ static int pubsub_init(void)
 
 static void pubsub_exit(void)
 {
-	struct topic_s *topic, *tmp_topic;
-    	struct process_es *process, *tmp_process;
-    	list_for_each_entry_safe(topic, tmp_topic, &topic_list, link) {
-        	list_for_each_entry_safe(process, tmp_process, &topic->processes, link) {
-			list_del(&process->link);
-           		kfree(process->messages);
-			kfree(process->topic_to_be_fetched);
-			kfree(process);
-        	}
-        	list_del(&topic->link);
-        	kfree(topic);
-    	}
-
 	device_destroy(charClass, MKDEV(majorNumber, 0));
 	class_unregister(charClass);
 	class_destroy(charClass);
