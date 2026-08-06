@@ -8,9 +8,7 @@ Key files
 - `params.h` — external module parameters (`max_msgs`, `max_msg_size`).
 - `test_pubsub_driver.c` — simple test program demonstrating subscribe/publish/fetch.
 - `test_pubsub_driver_it.c` — interactive test program.
-- `Makefile` — build helpers (expects a kernel build directory via `KDIR` in a Buildroot style environment).
-
-License: GPL (module declared with MODULE_LICENSE("GPL")).
+- `Makefile` — build helpers (expects a Buildroot environment; variables at the top of the Makefile point to the Buildroot layout).
 
 ## Features
 - Character device accessible at `/dev/pubsub`.
@@ -21,56 +19,66 @@ License: GPL (module declared with MODULE_LICENSE("GPL")).
   - `/publish <topic> "message"`
   - `/fetch <topic>`
 
+## Intended environment
+This project is intended to be built and installed inside a Buildroot-style build environment. The included Makefile assumes a Buildroot output directory layout (the Makefile defines `BUILDROOT_DIR := ../..` and derives `KDIR` and `COMPILER` relative to that). The Makefile will build the kernel module against the kernel build tree and copy the test binaries into Buildroot's `output/target/bin`.
+
 ## Requirements
-- Linux system with kernel headers and build environment for the target kernel.
-- Building the module typically requires the kernel build directory (KERNEL_SRC or `/lib/modules/$(uname -r)/build`).
-- Building test programs requires a user-space C compiler (or the cross-compiler configured in the Makefile).
+- Buildroot checkout or an equivalent directory with a kernel build tree and cross-toolchain output (the Makefile expects `$(BUILDROOT_DIR)/output/build/linux-custom` and `$(BUILDROOT_DIR)/output/host/bin/<triplet>-gcc` by default).
+- The kernel build used by Buildroot must match the target kernel for which the module is built (module kernel version and config must be compatible).
+- Root privileges on the target (or a VM) to insert the module and create device nodes for testing.
 
-## Build (recommended)
-The repository includes a Makefile that expects a Buildroot-like layout. If you have a standard kernel build directory you can build the module and test programs manually.
+## Build (Buildroot-aware)
+The provided Makefile is designed to be used from within a Buildroot directory layout. You can either use the Makefile as-is or override variables on the command line.
 
-Quick local build steps (preferred for development/testing):
+From the repository root, using a Buildroot checkout at `/path/to/buildroot`:
+
 ```sh
-# Build the kernel module against the running kernel headers:
+# Build the kernel module and test binaries and install them into Buildroot's output
+make BUILDROOT_DIR=/path/to/buildroot
+```
+
+What the Makefile does (summary):
+- Uses `KDIR := $(BUILDROOT_DIR)/output/build/linux-custom` as the kernel build directory and runs `make -C $(KDIR) M=$$PWD` to build the module.
+- Runs `modules_install INSTALL_MOD_PATH=../../target` to install built modules into the Buildroot target directory.
+- Compiles `test_pubsub_driver` and `test_pubsub_driver_it` with the cross-compiler referenced by `COMPILER` and copies them to `$(BUILDROOT_DIR)/output/target/bin`.
+
+If you prefer to build only on the host for quick development (native build of test programs and module against your running kernel headers):
+
+```sh
+# Build the module against the running kernel (development/testing only)
 make -C /lib/modules/$(uname -r)/build M=$PWD modules
 
-# Compile the user-space test programs (if Makefile doesn't do it for you):
+# Build the user-space tests natively
 gcc -o test_pubsub_driver test_pubsub_driver.c
 gcc -o test_pubsub_driver_it test_pubsub_driver_it.c
 ```
 
-If you want to use the included Makefile as-is, make sure the variables `KDIR` and `COMPILER` point to valid kernel build and compiler locations (the Makefile uses Buildroot-style relative paths).
-
-## Install / Load module
-Be careful: loading kernel modules requires root and can crash your system if the module is buggy.
+To use a different toolchain or kernel build path when using the repository Makefile, override variables:
 
 ```sh
-# Build as shown above, then as root:
-sudo insmod pubsub_driver.ko  # or use modprobe if installed to the correct module path
+make BUILDROOT_DIR=/path/to/buildroot COMPILER=/path/to/host/bin/<triplet>-gcc KDIR=/path/to/kernel/build
+```
 
-# Check dmesg for driver initialization messages:
+## Install / Load module on the target
+After Buildroot has installed the module into `output/target`, deploy the built target filesystem (or boot the generated image). On the running target, as root:
+
+```sh
+# If the module is already on the target at /lib/modules/<version>/...
+insmod /lib/modules/<version>/kernel/drivers/<path>/pubsub_driver.ko
+# or, if you have the .ko locally on the target filesystem root:
+sudo insmod pubsub_driver.ko
+
+# Check kernel logs
 dmesg | tail -n 20
 
-# Ensure device node exists:
-# If udev created /dev/pubsub automatically you can use it directly.
-# Otherwise create it (replace MAJOR with the major number printed in dmesg)
+# Create device node if udev did not create it (replace MAJOR with the major number from dmesg)
 sudo mknod /dev/pubsub c <MAJOR> 0
 sudo chmod 666 /dev/pubsub
 ```
 
-You can pass module parameters at load time (defaults shown in code):
-- max_msgs (default 5) — number of messages per-process buffer (circular).
-- max_msg_size (default 255) — bytes per message.
-
-Example:
-```sh
-sudo insmod pubsub_driver.ko max_msgs=10 max_msg_size=512
-```
-
-Unload:
-```sh
-sudo rmmod pubsub_driver
-```
+Important Buildroot notes:
+- Cross-built kernel modules must be built against the same kernel sources and configuration used to build the target kernel in Buildroot. If the kernel version or config differ, the module may not load on the device.
+- The Makefile's default `COMPILER` points to Buildroot's host compiler (`output/host/bin/i586-buildroot-linux-gnu-gcc`). Override `COMPILER` if you need a different cross-compiler or want to build tests natively.
 
 ## Usage (protocol)
 Write plain strings to `/dev/pubsub`. Commands are ASCII text beginning with a slash:
@@ -100,14 +108,15 @@ printf "/fetch news" > /dev/pubsub
 head -c 255 < /dev/pubsub
 ```
 
-Or use the provided test program:
+Or use the provided test program (on the target device or in a chroot of the target rootfs):
+
 ```sh
-# Build test program then run:
+# Run on the target or inside the target rootfs where the test binaries were installed
 ./test_pubsub_driver topic1 topic2
-# The program subscribes to topics, forks to publish, waits and fetches messages, then unsubscribes.
 ```
 
 Interactive test:
+
 ```sh
 ./test_pubsub_driver_it
 # Type commands such as:
@@ -130,15 +139,9 @@ Interactive test:
 - To add features: consider safer parsing, length checks, per-topic locking (spinlocks) for concurrency, and clearer user-space protocol framing.
 - Tests: the repository contains `test_pubsub_driver.c` (automated simple scenario) and `test_pubsub_driver_it.c` (interactive).
 
-## Contributing
-- Open issues or PRs for bug fixes, clearer input parsing, concurrency hardening, or feature requests.
-- If adding tests or CI, keep kernel build steps isolated — building kernel modules in CI requires special setup or cross-building.
-
 ## Security / Safety
-- Running and testing kernel modules requires root. A faulty module can crash or hang the system — test in a VM or containerized environment where possible.
+- Running and testing kernel modules requires root. A faulty module can crash or hang the system — test in a VM or Buildroot-generated VM/image where possible.
 - Avoid loading on production machines.
 
 ## Contact / Author
 Repository author: paphartmann
-
----
