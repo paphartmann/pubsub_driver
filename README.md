@@ -6,7 +6,7 @@ Key files
 - `main_driver.c` — kernel module (device registration, file operations, command parsing).
 - `list_driver.c` / `list_driver.h` — topic and per-process message list management.
 - `params.h` — external module parameters (`max_msgs`, `max_msg_size`).
-- `test_pubsub_driver.c` — simple test program demonstrating subscribe/publish/fetch.
+- `test_pubsub_driver.c` — device-level test for subscribe/publish/fetch and concurrent operations from multiple processes.
 - `Makefile` — build helpers (expects a Buildroot environment; variables at the top of the Makefile point to the Buildroot layout).
 
 ## Features
@@ -113,6 +113,10 @@ Or use the provided test program (on the target device or in a chroot of the tar
 ./test_pubsub_driver topic1 topic2
 ```
 
+The test also starts four worker processes together; each subscribes to a test topic,
+then concurrently publishes and fetches 100 messages before unsubscribing. Run it
+against a loaded driver on a development target.
+
 ## Behavior notes & limitations
 - Messages are stored per-subscriber in fixed-size circular buffers. `max_msgs` * `max_msg_size` determines per-subscriber allocation.
 - The module uses kernel memory allocations (kmalloc) per subscription and per message buffer; unsubscribing frees this memory.
@@ -130,7 +134,7 @@ Or use the provided test program (on the target device or in a chroot of the tar
   - add_process_to_topic, rem_process_from_topic, publish_to_topic, fetch_from_process (defined in `list_driver.c`/`list_driver.h`).
   - Device operations (open/read/write/release) are in `main_driver.c`.
 - To add features: consider safer parsing, length checks, protecting fetched-message access across the userspace copy, and clearer user-space protocol framing.
-- Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level scenario for validating the user-space interface.
+- Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level scenario for validating the user-space interface and concurrent multi-process access.
 
 ## Security / Safety
 - Running and testing kernel modules requires root. A faulty module can crash or hang the system — test in a VM or Buildroot-generated VM/image where possible.
