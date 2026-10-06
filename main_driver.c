@@ -99,8 +99,10 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	char *result = fetch_from_process(pid);
 
 	if (result != NULL) {
-		copy_to_user(buffer, result, len);
-		return len;
+		size_t to_copy = min(len, strlen(result));
+		if (copy_to_user(buffer, result, to_copy))
+			return -EFAULT;
+		return to_copy;
 	} else {
 		return -1;
 	}
@@ -128,28 +130,39 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		printk(KERN_INFO "KENREL: Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
-		char *message;
+		char *message_start;
+		char *message_end;
+		char message[max_msg_size];
+		size_t message_len;
+
 		sscanf(cpy_buffer, "/publish %s", topic_name);
-		message = strchr(cpy_buffer, '"');
-		printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n", pid, message, topic_name);
-		publish_to_topic(message, topic_name);
+		message_start = strchr(cpy_buffer, '"');
+		if (message_start != NULL) {
+			message_start++;
+			message_end = strchr(message_start, '"');
+			if (message_end == NULL) {
+				printk(KERN_NOTICE "Device publish command missing closing quote\n");
+				return -1;
+			}
+			message_len = (size_t)(message_end - message_start);
+			if (message_len >= (size_t)max_msg_size)
+				message_len = max_msg_size - 1;
+			memset(message, 0, sizeof(message));
+			memcpy(message, message_start, message_len);
+			message[message_len] = '\0';
+
+			printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n",
+			       pid, message, topic_name);
+			publish_to_topic(message, topic_name);
+		} else {
+			printk(KERN_NOTICE "Device publish command missing message\n");
+			return -1;
+		}
 	} else if (strcmp(action, "fetch") == 0) {
 		sscanf(cpy_buffer, "/fetch %s", topic_name);
 		printk(KERN_INFO "KERNEL: Process %d wants to fetch from %s\n", pid, topic_name);
 
-		struct topic_s *topic;
-		list_for_each_entry(topic, &topic_list, link) {
-			struct process_es *process;
-			list_for_each_entry(process, &topic->processes, link) {
-				if (process->pid == pid) {
-					if (process->topic_to_be_fetched != NULL) {
-						kfree(process->topic_to_be_fetched);
-					}
-                                        process->topic_to_be_fetched = kmalloc(len, GFP_KERNEL);
-                                        memcpy(process->topic_to_be_fetched, topic_name, len);
-				}
-			}
-		}
+		set_topic_to_be_fetched(pid, topic_name);
 	} else {
 		printk(KERN_NOTICE "Device was written with wrong format\nMessage written: %s\n", cpy_buffer);
 		return -1;

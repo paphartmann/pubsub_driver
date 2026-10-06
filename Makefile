@@ -12,6 +12,12 @@ all:
 	cp test_pubsub_driver $(BUILDROOT_DIR)/output/target/bin
 	cp test_pubsub_driver_it $(BUILDROOT_DIR)/output/target/bin
 
+test:
+	mkdir -p build
+	$(CC) -std=gnu11 -Wall -Wextra -Werror -DUNIT_TEST -I. \
+		-o build/test_list_driver tests/test_list_driver.c list_driver.c
+	./build/test_list_driver
+
 clean:
 	rm -f *.o *.ko .*.cmd
 	rm -f modules.order
@@ -19,4 +25,6 @@ clean:
 	rm -f pubsub_driver.mod.c
 	rm -f test_pubsub_driver
 	rm -f test_pubsub_driver_it
+	rm -rf build
 
+.PHONY: all clean test

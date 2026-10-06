@@ -87,7 +87,7 @@ Write plain strings to `/dev/pubsub`. Commands are ASCII text beginning with a s
   - `/subscribe mytopic`
 - Unsubscribe from a topic:
   - `/unsubscribe mytopic`
-- Publish a message to a topic (message must include quotes in the test programs; the kernel code locates the first `"`):
+- Publish a message to a topic (message must be enclosed in double quotes; the kernel strips the surrounding quotes and stores only the payload between them):
   - `/publish mytopic "Hello world"`
 - Tell the driver which topic to fetch from:
   - `/fetch mytopic`
@@ -133,11 +133,16 @@ Interactive test:
 - There is basic logging via printk; check `dmesg` for kernel-side messages and diagnostics.
 
 ## Development pointers
+- Run the host-side automated tests with `make test`. These exercise the topic and
+  subscriber/message-buffer logic without loading the kernel module, so they run
+  without a VM or root privileges. They do not replace integration testing of the
+  device interface or kernel-specific behavior.
 - Key symbols:
   - add_process_to_topic, rem_process_from_topic, publish_to_topic, fetch_from_process (defined in `list_driver.c`/`list_driver.h`).
   - Device operations (open/read/write/release) are in `main_driver.c`.
 - To add features: consider safer parsing, length checks, per-topic locking (spinlocks) for concurrency, and clearer user-space protocol framing.
-- Tests: the repository contains `test_pubsub_driver.c` (automated simple scenario) and `test_pubsub_driver_it.c` (interactive).
+- Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level
+  scenario and `test_pubsub_driver_it.c` is interactive.
 
 ## Security / Safety
 - Running and testing kernel modules requires root. A faulty module can crash or hang the system — test in a VM or Buildroot-generated VM/image where possible.
