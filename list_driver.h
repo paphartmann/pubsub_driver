@@ -1,3 +1,6 @@
+#ifndef PUBSUB_LIST_DRIVER_H
+#define PUBSUB_LIST_DRIVER_H
+
 #include "params.h"
 
 #ifdef UNIT_TEST
@@ -25,3 +28,5 @@ void rem_process_from_topic(int pid, const char *topic_title);
 void publish_to_topic(const char *message, const char *topic_title);
 void set_topic_to_be_fetched(int pid, const char *topic_title);
 char *fetch_from_process(int pid);
+
+#endif

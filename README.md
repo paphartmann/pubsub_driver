@@ -128,7 +128,7 @@ Interactive test:
 ## Behavior notes & limitations
 - Messages are stored per-subscriber in fixed-size circular buffers. `max_msgs` * `max_msg_size` determines per-subscriber allocation.
 - The module uses kernel memory allocations (kmalloc) per subscription and per message buffer; unsubscribing frees this memory.
-- The module does not perform extensive input validation — malformed input may cause unexpected behavior.
+- Device writes are limited to 4096 bytes, topic names to 63 bytes, and malformed commands are rejected. The module does not provide synchronization for concurrent access.
 - Message copying and string handling happen in kernel space; exercise caution and test thoroughly. This driver is intended for learning/demo purposes, not production use.
 - There is basic logging via printk; check `dmesg` for kernel-side messages and diagnostics.
 

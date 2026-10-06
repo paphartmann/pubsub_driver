@@ -6,11 +6,13 @@
 #include <linux/uaccess.h>
 #include <linux/list.h>
 #include <linux/slab.h>
+#include <linux/string.h>
 #include "list_driver.h"
 #include "params.h"
 
 #define DEVICE_NAME "pubsub"
 #define CLASS_NAME  "pubsub_class"
+#define MAX_COMMAND_SIZE 4096
 
 MODULE_LICENSE("GPL");
 
@@ -18,7 +20,6 @@ int max_msgs = 5;
 int max_msg_size = 255;
 
 static int majorNumber;
-//static int number_opens = 0;
 static struct class *charClass = NULL;
 static struct device *charDevice = NULL;
 
@@ -87,8 +88,6 @@ static void pubsub_exit(void)
 
 static int dev_open(struct inode *inodep, struct file *filep)
 {
-	//number_opens++;
-	//printk(KERN_INFO "PubSub Driver: device has been opened %d time(s)\n", number_opens);
 	printk("Process %d opened the device\n", (int) task_pid_nr(current));
 	return 0;
 }
@@ -108,66 +107,104 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	}
 }
 
+static int is_command_whitespace(char character)
+{
+	return character == ' ' || character == '\t' ||
+	       character == '\n' || character == '\r';
+}
+
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	char cpy_buffer[len];
-	memset(cpy_buffer, 0, len);
-	copy_from_user(cpy_buffer, buffer, len);
-	
-	char action[len];
-	sscanf(cpy_buffer, "/%s", action);
-
-	char topic_name[len];
+	char *command;
+	char *cursor;
+	char *action;
+	char *topic_name;
+	char *message;
+	char *message_end;
+	size_t topic_len;
 	int pid = (int) task_pid_nr(current);
+	ssize_t result = -EINVAL;
+
+	if (len == 0)
+		return 0;
+	if (len > MAX_COMMAND_SIZE)
+		return -E2BIG;
+
+	command = kmalloc(len + 1, GFP_KERNEL);
+	if (command == NULL)
+		return -ENOMEM;
+	if (copy_from_user(command, buffer, len)) {
+		kfree(command);
+		return -EFAULT;
+	}
+	command[len] = '\0';
+	if (memchr(command, '\0', len) != NULL || command[0] != '/')
+		goto out;
+
+	action = command + 1;
+	cursor = action;
+	while (*cursor != '\0' && !is_command_whitespace(*cursor))
+		cursor++;
+	if (*cursor != '\0') {
+		*cursor++ = '\0';
+		while (is_command_whitespace(*cursor))
+			cursor++;
+	}
+	if (*action == '\0' || *cursor == '\0')
+		goto out;
+
+	topic_name = cursor;
+	while (*cursor != '\0' && !is_command_whitespace(*cursor))
+		cursor++;
+	topic_len = cursor - topic_name;
+	if (topic_len == 0 || topic_len >= sizeof(((struct topic_s *)0)->title))
+		goto out;
+	if (*cursor != '\0') {
+		*cursor++ = '\0';
+		while (is_command_whitespace(*cursor))
+			cursor++;
+	}
+
 	if (strcmp(action, "subscribe") == 0) {
-		//printk("KERNEL: topic_name = %s\n", topic_name);
-		sscanf(cpy_buffer, "/subscribe %s", topic_name);
-		//printk("KERNEL: topic_name = %s\n", topic_name);
+		if (*cursor != '\0')
+			goto out;
 		printk(KERN_INFO "KERNEL: Process %d wants to subscribe to topic %s\n", pid, topic_name);
 		add_process_to_topic(pid, topic_name);
 	} else if (strcmp(action, "unsubscribe") == 0) {
-		sscanf(cpy_buffer, "/unsubscribe %s", topic_name);
+		if (*cursor != '\0')
+			goto out;
 		printk(KERN_INFO "KENREL: Process %d wants to unsubscribe to topic %s\n", pid, topic_name);
 		rem_process_from_topic(pid, topic_name);
 	} else if (strcmp(action, "publish") == 0) {
-		char *message_start;
-		char *message_end;
-		char message[max_msg_size];
-		size_t message_len;
+		if (*cursor != '"')
+			goto out;
+		message = cursor + 1;
+		message_end = strchr(message, '"');
+		if (message_end == NULL)
+			goto out;
+		cursor = message_end + 1;
+		while (is_command_whitespace(*cursor))
+			cursor++;
+		if (*cursor != '\0')
+			goto out;
 
-		sscanf(cpy_buffer, "/publish %s", topic_name);
-		message_start = strchr(cpy_buffer, '"');
-		if (message_start != NULL) {
-			message_start++;
-			message_end = strchr(message_start, '"');
-			if (message_end == NULL) {
-				printk(KERN_NOTICE "Device publish command missing closing quote\n");
-				return -1;
-			}
-			message_len = (size_t)(message_end - message_start);
-			if (message_len >= (size_t)max_msg_size)
-				message_len = max_msg_size - 1;
-			memset(message, 0, sizeof(message));
-			memcpy(message, message_start, message_len);
-			message[message_len] = '\0';
-
-			printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n",
-			       pid, message, topic_name);
-			publish_to_topic(message, topic_name);
-		} else {
-			printk(KERN_NOTICE "Device publish command missing message\n");
-			return -1;
-		}
+		*message_end = '\0';
+		printk(KERN_INFO "KERNEL: Process %d wants to publish %s to %s\n",
+		       pid, message, topic_name);
+		publish_to_topic(message, topic_name);
 	} else if (strcmp(action, "fetch") == 0) {
-		sscanf(cpy_buffer, "/fetch %s", topic_name);
+		if (*cursor != '\0')
+			goto out;
 		printk(KERN_INFO "KERNEL: Process %d wants to fetch from %s\n", pid, topic_name);
-
 		set_topic_to_be_fetched(pid, topic_name);
 	} else {
-		printk(KERN_NOTICE "Device was written with wrong format\nMessage written: %s\n", cpy_buffer);
-		return -1;
+		goto out;
 	}
-	return len;
+
+	result = len;
+out:
+	kfree(command);
+	return result;
 }
 
 static int dev_release(struct inode *inodep, struct file *filep)
