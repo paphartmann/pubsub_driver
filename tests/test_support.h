@@ -2,6 +2,7 @@
 #define PUBSUB_TEST_SUPPORT_H
 
 #include <stddef.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,8 @@ struct list_head {
 	(node)->next->prev = (node)->prev; \
 } while (0)
 
+#define list_empty(head) ((head)->next == (head))
+
 #define container_of(ptr, type, member) \
 	((type *)((char *)(ptr) - offsetof(type, member)))
 
@@ -49,6 +52,22 @@ struct list_head {
 #define kfree(pointer) free(pointer)
 #define printk(...) ((void)0)
 #define mdelay(milliseconds) ((void)(milliseconds))
+
+struct mutex {
+	pthread_mutex_t native;
+};
+
+static inline void mutex_lock(struct mutex *m)
+{
+	if (pthread_mutex_lock(&m->native) != 0)
+		abort();
+}
+
+static inline void mutex_unlock(struct mutex *m)
+{
+	if (pthread_mutex_unlock(&m->native) != 0)
+		abort();
+}
 
 extern int max_msgs;
 extern int max_msg_size;

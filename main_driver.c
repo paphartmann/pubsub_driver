@@ -24,6 +24,7 @@ static struct class *charClass = NULL;
 static struct device *charDevice = NULL;
 
 struct list_head topic_list;
+DEFINE_MUTEX(pubsub_lock);
 
 static int	dev_open(struct inode *, struct file *);
 static int	dev_release(struct inode *, struct file *);
@@ -211,9 +212,7 @@ static int dev_release(struct inode *inodep, struct file *filep)
 {
 	int pid = (int)task_pid_nr(current);
 	struct topic_s *topic;
-	list_for_each_entry(topic, &topic_list, link) {
-		rem_process_from_topic(pid, topic->title);
-        }
+	rem_process_from_all_topics(pid);
 	printk(KERN_INFO "Process %d closed the device\n", (int) task_pid_nr(current));
 	return 0;
 }

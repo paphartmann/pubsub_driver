@@ -7,7 +7,6 @@ Key files
 - `list_driver.c` / `list_driver.h` — topic and per-process message list management.
 - `params.h` — external module parameters (`max_msgs`, `max_msg_size`).
 - `test_pubsub_driver.c` — simple test program demonstrating subscribe/publish/fetch.
-- `test_pubsub_driver_it.c` — interactive test program.
 - `Makefile` — build helpers (expects a Buildroot environment; variables at the top of the Makefile point to the Buildroot layout).
 
 ## Features
@@ -40,7 +39,7 @@ make BUILDROOT_DIR=/path/to/buildroot
 What the Makefile does (summary):
 - Uses `KDIR := $(BUILDROOT_DIR)/output/build/linux-custom` as the kernel build directory and runs `make -C $(KDIR) M=$$PWD` to build the module.
 - Runs `modules_install INSTALL_MOD_PATH=../../target` to install built modules into the Buildroot target directory.
-- Compiles `test_pubsub_driver` and `test_pubsub_driver_it` with the cross-compiler referenced by `COMPILER` and copies them to `$(BUILDROOT_DIR)/output/target/bin`.
+- Compiles `test_pubsub_driver` with the cross-compiler referenced by `COMPILER` and copies it to `$(BUILDROOT_DIR)/output/target/bin`.
 
 If you prefer to build only on the host for quick development (native build of test programs and module against your running kernel headers):
 
@@ -48,9 +47,8 @@ If you prefer to build only on the host for quick development (native build of t
 # Build the module against the running kernel (development/testing only)
 make -C /lib/modules/$(uname -r)/build M=$PWD modules
 
-# Build the user-space tests natively
+# Build the user-space test natively
 gcc -o test_pubsub_driver test_pubsub_driver.c
-gcc -o test_pubsub_driver_it test_pubsub_driver_it.c
 ```
 
 To use a different toolchain or kernel build path when using the repository Makefile, override variables:
@@ -115,16 +113,6 @@ Or use the provided test program (on the target device or in a chroot of the tar
 ./test_pubsub_driver topic1 topic2
 ```
 
-Interactive test:
-
-```sh
-./test_pubsub_driver_it
-# Type commands such as:
-# /subscribe topic
-# /publish topic "Hello"
-# /fetch topic
-```
-
 ## Behavior notes & limitations
 - Messages are stored per-subscriber in fixed-size circular buffers. `max_msgs` * `max_msg_size` determines per-subscriber allocation.
 - The module uses kernel memory allocations (kmalloc) per subscription and per message buffer; unsubscribing frees this memory.
@@ -141,8 +129,7 @@ Interactive test:
   - add_process_to_topic, rem_process_from_topic, publish_to_topic, fetch_from_process (defined in `list_driver.c`/`list_driver.h`).
   - Device operations (open/read/write/release) are in `main_driver.c`.
 - To add features: consider safer parsing, length checks, per-topic locking (spinlocks) for concurrency, and clearer user-space protocol framing.
-- Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level
-  scenario and `test_pubsub_driver_it.c` is interactive.
+- Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level scenario for validating the user-space interface.
 
 ## Security / Safety
 - Running and testing kernel modules requires root. A faulty module can crash or hang the system — test in a VM or Buildroot-generated VM/image where possible.
