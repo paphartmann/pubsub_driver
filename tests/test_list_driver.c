@@ -210,6 +210,28 @@ static void test_concurrent_topic_operations(void)
 	assert(subscriber_count("concurrent") == 0);
 }
 
+static void test_message_size_rejection(void)
+{
+	int saved_max_msgs = max_msgs;
+	int saved_max_msg_size = max_msg_size;
+	char oversized[64];
+
+	max_msgs = 3;
+	max_msg_size = 8;
+	memset(oversized, 'x', sizeof(oversized));
+	oversized[sizeof(oversized) - 1] = '\0';
+
+	add_process_to_topic(811, "oversized");
+	publish_to_topic(oversized, "oversized");
+	set_topic_to_be_fetched(811, "oversized");
+	assert(fetch_from_process(811) == NULL);
+	assert(subscriber_count("oversized") == 1);
+
+	max_msgs = saved_max_msgs;
+	max_msg_size = saved_max_msg_size;
+	rem_process_from_topic(811, "oversized");
+}
+
 static void test_invalid_queue_configuration(void)
 {
 	int saved_max_msgs = max_msgs;
@@ -241,6 +263,7 @@ int main(void)
 	test_remove_process_from_all_topics();
 	test_empty_topic_cleanup();
 	test_concurrent_topic_operations();
+	test_message_size_rejection();
 	test_invalid_queue_configuration();
 	clear_topics();
 	puts("list_driver tests passed");

@@ -103,9 +103,8 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 		if (copy_to_user(buffer, result, to_copy))
 			return -EFAULT;
 		return to_copy;
-	} else {
-		return -1;
 	}
+	return 0;
 }
 
 static int is_command_whitespace(char character)
@@ -139,28 +138,36 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 		return -EFAULT;
 	}
 	command[len] = '\0';
+	/* Reject malformed input before parsing tokens. */
 	if (memchr(command, '\0', len) != NULL || command[0] != '/')
 		goto out;
 
+	/* Tokenize: /<action> <topic> [payload]. */
 	action = command + 1;
 	cursor = action;
+	/* Walk past the action name until the first whitespace or the end of the string. */
 	while (*cursor != '\0' && !is_command_whitespace(*cursor))
 		cursor++;
 	if (*cursor != '\0') {
+		/* Terminate the action string and skip spacing before the topic. */
 		*cursor++ = '\0';
 		while (is_command_whitespace(*cursor))
 			cursor++;
 	}
+	/* Reject empty verbs and commands with no topic after the action. */
 	if (*action == '\0' || *cursor == '\0')
 		goto out;
 
+	/* Topic is the next token, and it must fit in the topic title field. */
 	topic_name = cursor;
+	/* Advance until the next separator to isolate the topic string. */
 	while (*cursor != '\0' && !is_command_whitespace(*cursor))
 		cursor++;
 	topic_len = cursor - topic_name;
 	if (topic_len == 0 || topic_len >= sizeof(((struct topic_s *)0)->title))
 		goto out;
 	if (*cursor != '\0') {
+		/* Close the topic token and move to whatever optional payload remains. */
 		*cursor++ = '\0';
 		while (is_command_whitespace(*cursor))
 			cursor++;
