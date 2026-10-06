@@ -116,7 +116,8 @@ Or use the provided test program (on the target device or in a chroot of the tar
 ## Behavior notes & limitations
 - Messages are stored per-subscriber in fixed-size circular buffers. `max_msgs` * `max_msg_size` determines per-subscriber allocation.
 - The module uses kernel memory allocations (kmalloc) per subscription and per message buffer; unsubscribing frees this memory.
-- Device writes are limited to 4096 bytes, topic names to 63 bytes, and malformed commands are rejected. The module does not provide synchronization for concurrent access.
+- Empty topics are removed when their last subscriber unsubscribes or is otherwise removed.
+- Device writes are limited to 4096 bytes, topic names to 63 bytes, and malformed commands are rejected. A global mutex serializes access to topic, subscriber, and message-queue state. However, fetched messages are copied to userspace after the mutex is released, so concurrent operations are not fully protected against message-buffer changes.
 - Message copying and string handling happen in kernel space; exercise caution and test thoroughly. This driver is intended for learning/demo purposes, not production use.
 - There is basic logging via printk; check `dmesg` for kernel-side messages and diagnostics.
 
@@ -128,7 +129,7 @@ Or use the provided test program (on the target device or in a chroot of the tar
 - Key symbols:
   - add_process_to_topic, rem_process_from_topic, publish_to_topic, fetch_from_process (defined in `list_driver.c`/`list_driver.h`).
   - Device operations (open/read/write/release) are in `main_driver.c`.
-- To add features: consider safer parsing, length checks, per-topic locking (spinlocks) for concurrency, and clearer user-space protocol framing.
+- To add features: consider safer parsing, length checks, protecting fetched-message access across the userspace copy, and clearer user-space protocol framing.
 - Tests: `make test` runs host-side unit tests; `test_pubsub_driver.c` is a device-level scenario for validating the user-space interface.
 
 ## Security / Safety
