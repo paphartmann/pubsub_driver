@@ -1,3 +1,0 @@
-name: "CodeQL configuration"
-queries:
-  - uses: ./.github/codeql/queries/KernelWriteUserInput.ql
