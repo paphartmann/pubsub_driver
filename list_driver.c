@@ -236,7 +236,14 @@ char *fetch_from_process(int pid)
 				}
 				head_index = (size_t)(process->head % max_msgs);
 				offset = head_index * max_msg_size;
-				result = process->messages + offset;
+				result = kmalloc((size_t)max_msg_size + 1, GFP_KERNEL);
+				if (result == NULL) {
+					mutex_unlock(&pubsub_lock);
+					return NULL;
+				}
+				memcpy(result, process->messages + offset, (size_t)max_msg_size);
+				result[max_msg_size] = '\0';
+				memset(process->messages + offset, 0, (size_t)max_msg_size);
 				process->head++;
 				break;
 			}

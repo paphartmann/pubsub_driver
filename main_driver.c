@@ -100,8 +100,11 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
 	if (result != NULL) {
 		size_t to_copy = min(len, strlen(result));
-		if (copy_to_user(buffer, result, to_copy))
+		if (copy_to_user(buffer, result, to_copy)) {
+			kfree(result);
 			return -EFAULT;
+		}
+		kfree(result);
 		return to_copy;
 	}
 	return 0;
@@ -218,9 +221,8 @@ out:
 static int dev_release(struct inode *inodep, struct file *filep)
 {
 	int pid = (int)task_pid_nr(current);
-	struct topic_s *topic;
-	rem_process_from_all_topics(pid);
-	printk(KERN_INFO "Process %d closed the device\n", (int) task_pid_nr(current));
+
+	printk(KERN_INFO "Process %d closed the device\n", pid);
 	return 0;
 }
 
