@@ -224,6 +224,7 @@ static int dev_release(struct inode *inodep, struct file *filep)
 	int pid = (int)task_pid_nr(current);
 
 	printk(KERN_INFO "Process %d closed the device\n", pid);
+	rem_process_from_all_topics(pid);
 	return 0;
 }
 

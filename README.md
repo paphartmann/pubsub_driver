@@ -121,6 +121,7 @@ against a loaded driver on a development target.
 - Messages are stored per-subscriber in fixed-size circular buffers. `max_msgs` * `max_msg_size` determines per-subscriber allocation.
 - The module uses kernel memory allocations (kmalloc) per subscription and per message buffer; unsubscribing frees this memory.
 - Empty topics are removed when their last subscriber unsubscribes or is otherwise removed.
+- Closing the device removes the closing process's subscriptions from all topics, including unread queued messages.
 - Device writes are limited to 4096 bytes, topic names to 63 bytes, and malformed commands are rejected. A global mutex serializes access to topic, subscriber, and message-queue state. However, fetched messages are copied to userspace after the mutex is released, so concurrent operations are not fully protected against message-buffer changes.
 - Message copying and string handling happen in kernel space; exercise caution and test thoroughly. This driver is intended for learning/demo purposes, not production use.
 - There is basic logging via printk; check `dmesg` for kernel-side messages and diagnostics.
