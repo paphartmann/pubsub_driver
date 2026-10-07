@@ -137,6 +137,25 @@ void rem_process_from_all_topics(int pid)
 	mutex_unlock(&pubsub_lock);
 }
 
+void clear_all_topics(void)
+{
+	struct topic_s *topic, *topic_tmp;
+	struct process_es *proc, *proc_tmp;
+
+	mutex_lock(&pubsub_lock);
+	list_for_each_entry_safe(topic, topic_tmp, &topic_list, link) {
+		list_for_each_entry_safe(proc, proc_tmp, &topic->processes, link) {
+			list_del(&proc->link);
+			kfree(proc->messages);
+			kfree(proc->topic_to_be_fetched);
+			kfree(proc);
+		}
+		list_del(&topic->link);
+		kfree(topic);
+	}
+	mutex_unlock(&pubsub_lock);
+}
+
 void publish_to_topic(const char *message, const char *topic_title)
 {
 	struct topic_s *entry = NULL;

@@ -80,6 +80,7 @@ static int pubsub_init(void)
 
 static void pubsub_exit(void)
 {
+	clear_all_topics();
 	device_destroy(charClass, MKDEV(majorNumber, 0));
 	class_unregister(charClass);
 	class_destroy(charClass);

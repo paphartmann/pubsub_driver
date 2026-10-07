@@ -31,8 +31,8 @@ struct topic_s {
 void add_process_to_topic(int pid, const char *topic_title);
 void rem_process_from_topic(int pid, const char *topic_title);
 void rem_process_from_all_topics(int pid);
+void clear_all_topics(void);
 void publish_to_topic(const char *message, const char *topic_title);
 void set_topic_to_be_fetched(int pid, const char *topic_title);
 char *fetch_from_process(int pid);
-
 #endif
