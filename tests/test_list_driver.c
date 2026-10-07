@@ -210,6 +210,24 @@ static void test_concurrent_topic_operations(void)
 	assert(subscriber_count("concurrent") == 0);
 }
 
+static void test_exact_topic_name_length(void)
+{
+	char topic[64];
+
+	memset(topic, 't', sizeof(topic) - 1);
+	topic[sizeof(topic) - 1] = '\0';
+
+	add_process_to_topic(812, topic);
+	assert(subscriber_count(topic) == 1);
+	assert(topic_count() == 1);
+	publish_to_topic("payload", topic);
+	set_topic_to_be_fetched(812, topic);
+	assert(strcmp(fetch_from_process(812), "payload") == 0);
+	rem_process_from_all_topics(812);
+	assert(subscriber_count(topic) == 0);
+	assert(topic_count() == 0);
+}
+
 static void test_message_size_rejection(void)
 {
 	int saved_max_msgs = max_msgs;
@@ -263,6 +281,7 @@ int main(void)
 	test_remove_process_from_all_topics();
 	test_empty_topic_cleanup();
 	test_concurrent_topic_operations();
+	test_exact_topic_name_length();
 	test_message_size_rejection();
 	test_invalid_queue_configuration();
 	clear_topics();

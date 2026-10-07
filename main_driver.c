@@ -167,7 +167,7 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 	while (*cursor != '\0' && !is_command_whitespace(*cursor))
 		cursor++;
 	topic_len = cursor - topic_name;
-	if (topic_len == 0 || topic_len >= sizeof(((struct topic_s *)0)->title))
+	if (topic_len == 0 || topic_len >= PUBSUB_TOPIC_NAME_LEN)
 		goto out;
 	if (*cursor != '\0') {
 		/* Close the topic token and move to whatever optional payload remains. */

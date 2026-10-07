@@ -12,6 +12,8 @@
 
 extern struct mutex pubsub_lock;
 
+#define PUBSUB_TOPIC_NAME_LEN 64
+
 struct process_es {
 	struct list_head link;
 	int pid;
@@ -22,7 +24,7 @@ struct process_es {
 
 struct topic_s {
 	struct list_head link;
-	char title[64];
+	char title[PUBSUB_TOPIC_NAME_LEN];
 	struct list_head processes;
 };
 

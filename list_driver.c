@@ -41,7 +41,8 @@ void add_process_to_topic(int pid, const char *topic_title)
 		return;
 	}
 	memset(entry, 0, sizeof(*entry));
-	strncpy(entry->title, topic_title, sizeof(entry->title) - 1);
+	strncpy(entry->title, topic_title, sizeof(entry->title));
+	entry->title[sizeof(entry->title) - 1] = '\0';
 	INIT_LIST_HEAD(&entry->link);
 	INIT_LIST_HEAD(&entry->processes);
 	list_add_tail(&entry->link, &topic_list);
@@ -57,7 +58,7 @@ add_process:
 	}
 	memset(process, 0, sizeof(*process));
 	process->messages = kmalloc((size_t)max_msg_size * max_msgs, GFP_KERNEL);
-	process->topic_to_be_fetched = kmalloc(64, GFP_KERNEL);
+	process->topic_to_be_fetched = kmalloc(PUBSUB_TOPIC_NAME_LEN, GFP_KERNEL);
 	if (process->messages == NULL || process->topic_to_be_fetched == NULL) {
 		kfree(process->messages);
 		kfree(process->topic_to_be_fetched);
@@ -196,8 +197,9 @@ void set_topic_to_be_fetched(int pid, const char *topic_title)
 		 */
 		list_for_each_entry(process, &topic->processes, link) {
 			if (process->pid == pid) {
-				strncpy(process->topic_to_be_fetched, topic_title, 63);
-				process->topic_to_be_fetched[63] = '\0';
+				strncpy(process->topic_to_be_fetched, topic_title,
+					PUBSUB_TOPIC_NAME_LEN - 1);
+				process->topic_to_be_fetched[PUBSUB_TOPIC_NAME_LEN - 1] = '\0';
 			}
 		}
 	}
